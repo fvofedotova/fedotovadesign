@@ -209,8 +209,8 @@
     accordion.querySelectorAll(".case-accordion-item")
   );
   var motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-  var duration = 380;
-  var easing = "cubic-bezier(0.4, 0, 0.2, 1)";
+  var duration = 460;
+  var easing = "cubic-bezier(0.33, 1, 0.68, 1)";
 
   function prefersReduced() {
     return motionQuery.matches;
@@ -313,24 +313,35 @@
     panel.style.height = "0px";
   }
 
-  function keepTriggerVisible(trigger) {
-    if (!trigger || prefersReduced()) return;
+  function getNavOffset() {
+    var navOffset = 88;
+    var navVar = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--nav-h")
+    );
+    if (!isNaN(navVar) && navVar > 0) navOffset = navVar + 16;
+    return navOffset;
+  }
 
-    requestAnimationFrame(function () {
-      var navOffset = 88;
-      var navVar = parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue("--nav-h")
-      );
-      if (!isNaN(navVar) && navVar > 0) navOffset = navVar + 16;
+  function getTriggerScrollTop(item) {
+    var trigger = item.querySelector(".case-accordion-trigger");
+    if (!trigger) return 0;
 
-      var rect = trigger.getBoundingClientRect();
-      if (rect.top < navOffset) {
-        window.scrollTo({
-          top: window.scrollY + rect.top - navOffset,
-          behavior: "smooth",
-        });
+    return Math.max(0, trigger.getBoundingClientRect().top + window.scrollY - getNavOffset());
+  }
+
+  function openAccordionItem(item, panel) {
+    items.forEach(function (entry) {
+      if (entry !== item && entry.classList.contains("is-open")) {
+        setItemState(entry, false, false);
       }
     });
+
+    window.scrollTo({
+      top: getTriggerScrollTop(item),
+      behavior: "auto",
+    });
+
+    setItemState(item, true, true);
   }
 
   items.forEach(function (item) {
@@ -363,6 +374,7 @@
     if (!trigger) return;
 
     trigger.addEventListener("click", function () {
+      var panel = item.querySelector(".case-accordion-panel");
       var isOpen = item.classList.contains("is-open");
 
       if (isOpen) {
@@ -370,13 +382,9 @@
         return;
       }
 
-      items.forEach(function (entry) {
-        if (entry !== item && entry.classList.contains("is-open")) {
-          setItemState(entry, false, true);
-        }
-      });
-      setItemState(item, true, true);
-      keepTriggerVisible(trigger);
+      if (!panel) return;
+
+      openAccordionItem(item, panel);
     });
   });
 
